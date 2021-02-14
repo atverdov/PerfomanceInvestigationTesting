@@ -66,7 +66,7 @@ public class PrimeCalculator {
         }
         latch.await();
         executors.shutdownNow();
-
+        Collections.sort(primeNumbersToReturn);
         return primeNumbersToReturn;
     }
 
