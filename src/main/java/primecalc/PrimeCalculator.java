@@ -1,3 +1,5 @@
+package primecalc;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -25,14 +27,13 @@ class BigIntegerIterator {
 
 public class PrimeCalculator {
     public static void main(String[] args) throws InterruptedException {
-        for (Integer prime : getPrimes()) {
+        for (Integer prime : getPrimes(200_000)) {
             System.out.print(prime + "\n");
         }
     }
 
-    private static List<Integer> getPrimes() throws InterruptedException {
+    public static List<Integer> getPrimes(int maxPrime) throws InterruptedException {
         List<Integer> primeNumbers = Collections.synchronizedList(new LinkedList<>());
-        int maxPrime = 200_000;
         List<BigIntegerIterator> myFiller = Stream.generate(new Supplier<BigIntegerIterator>() {
             int i = 2;
 
@@ -46,16 +47,18 @@ public class PrimeCalculator {
             primeNumbers.add(integer.getContain());
         }
 
-        List<Integer> primeNumbersToRemove = Collections.synchronizedList(new LinkedList<>());
+        List<Integer> primeNumbersToReturn = Collections.synchronizedList(new LinkedList<>());
         CountDownLatch latch = new CountDownLatch(maxPrime);
-        ExecutorService executors = Executors.newFixedThreadPool(Math.max(maxPrime / 100, 3000));
-        synchronized (primeNumbersToRemove) {
+        Integer maxThreadPoolNum = Runtime.getRuntime().availableProcessors();
+        ExecutorService executors = Executors.newFixedThreadPool(maxThreadPoolNum);
+        synchronized (primeNumbersToReturn) {
             for (Integer candidate : primeNumbers) {
                 executors.submit(() -> {
                     try {
                         isPrime(primeNumbers, candidate);
+                        primeNumbersToReturn.add(candidate);
                     } catch (Exception e) {
-                        primeNumbersToRemove.add(candidate);
+
                     }
                     latch.countDown();
                 });
@@ -63,11 +66,8 @@ public class PrimeCalculator {
         }
         latch.await();
         executors.shutdownNow();
-        for (Integer toRemove : primeNumbersToRemove) {
-            primeNumbers.remove(toRemove);
-        }
 
-        return primeNumbers;
+        return primeNumbersToReturn;
     }
 
     private static void isPrime(List<Integer> primeNumbers, Integer candidate) throws Exception {
